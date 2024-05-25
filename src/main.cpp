@@ -4,6 +4,7 @@
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_transform.hpp"
 
+
 int main()
 {
     // Initialisation
@@ -12,6 +13,7 @@ int main()
 
     glEnable(GL_BLEND);
     glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE); // On peut configurer l'équation qui mélange deux couleurs, comme pour faire différents blend mode dans Photoshop. Cette équation-ci donne le blending "normal" entre pixels transparents.
+    glEnable(GL_DEPTH_TEST);
 
     // Setup camera 
     auto camera = gl::Camera{};
@@ -46,24 +48,49 @@ int main()
         },
     }};
 
+    auto const cube_mesh = gl::Mesh{{
+        .vertex_buffers = {{
+            .layout = {gl::VertexAttribute::Position3D{0}},
+            .data   = { // Sommets
+                0, 0, 0,
+                1, 0, 0,
+                0, 1, 0,
+                1, 1, 0,
+                
+                0, 0, 1,
+                1, 0, 1,
+                0, 1, 1,
+                1, 1, 1,
+            },
+        }},
+        .index_buffer   = { // Triangles des faces utilisant 3 sommets (numéros des sommets ci-dessus commençant à 0)
+            0, 1, 2,  1, 2, 3, // Avant
+            0, 1, 4,  1, 4, 5, // Dessous
+            4, 5, 7,  4, 6, 7, // Arrière
+            2, 3, 6,  3, 6, 7, // Dessus
+            1, 3, 7,  1, 5, 7, // Côté 1
+            2, 0, 4,  2, 6, 4, // Côté 2
+        },
+    }};
+
 
     while (gl::window_is_open())
     {
         // Rendu à chaque frame
         glClearColor(0, 0.75f, 0, 1.f); // Choisis la couleur à utiliser. Les paramètres sont R, G, B, A avec des valeurs qui vont de 0 à 1
-        glClear(GL_COLOR_BUFFER_BIT); // Exécute concrètement l'action d'appliquer sur tout l'écran la couleur choisie au-dessus
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Exécute concrètement l'action d'appliquer sur tout l'écran la couleur choisie au-dessus
     
         glm::mat4 const view_matrix = camera.view_matrix();
-        glm::mat4 const projection_matrix = glm::infinitePerspective(1.f /*field of view in radians*/, gl::framebuffer_aspect_ratio() /*aspect ratio*/, 0.001f /*near plane*/);
-        glm::mat4 const rotation_matrix = glm::rotate(glm::mat4{1.f}, gl::time_in_seconds() /*angle de la rotation*/, glm::vec3{0.f, 0.f, 1.f} /* axe autour duquel on tourne */);
-        glm::mat4 const translation_matrix = glm::translate(glm::mat4{1.f}, glm::vec3{0.f, 1.f, 0.f} /* déplacement */);    
+        glm::mat4 const projection_matrix = glm::infinitePerspective(2.f /*field of view in radians*/, gl::framebuffer_aspect_ratio() /*aspect ratio*/, 0.001f /*near plane*/);
+        // glm::mat4 const rotation_matrix = glm::rotate(glm::mat4{1.f}, gl::time_in_seconds() /*angle de la rotation*/, glm::vec3{0.f, 0.f, 1.f} /* axe autour duquel on tourne */);
+        // glm::mat4 const translation_matrix = glm::translate(glm::mat4{1.f}, glm::vec3{0.f, 1.f, 0.f} /* déplacement */);
 
-        glm::mat4 const view_projection_matrix = projection_matrix * view_matrix * rotation_matrix * translation_matrix; // Ordre des opérations des matrices : <-- <-- <--
+        glm::mat4 const view_projection_matrix = projection_matrix * view_matrix/*  * rotation_matrix * translation_matrix */; // Ordre des opérations des matrices : <-- <-- <--
 
         shader_square.bind();
         shader_square.set_uniform("aspect_ratio", gl::framebuffer_aspect_ratio());
         shader_square.set_uniform("view_projection_matrix", view_projection_matrix);
 
-        square_mesh.draw();
+        cube_mesh.draw();
     }
 }
