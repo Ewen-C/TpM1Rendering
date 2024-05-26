@@ -1,16 +1,19 @@
 #version 410
 
+// layout : fonctions utilisant les .data dans l'ordre donné (il doit y avoir assez de valeurs dans le .data)
+// Seul le vertex shader a accès au layout
 layout(location = 0) in vec2 in_position; // square
 // layout(location = 0) in vec3 in_position; // cube
 
+layout(location = 1) in vec2 uv_in;
+out vec2 uv;
+
+ // uniform : variables envoyée du C++ au shaders
 uniform float aspect_ratio;
 uniform mat4 view_projection_matrix;
     
 out vec2 vertex_position;  // square
 // out vec3 vertex_position;  // cube
-
-layout(location = 1) in vec2 uv_in;
-out vec2 uv;
 
 void main()
 {
