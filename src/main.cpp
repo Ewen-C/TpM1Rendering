@@ -15,14 +15,52 @@ int main()
     glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE); // On peut configurer l'équation qui mélange deux couleurs, comme pour faire différents blend mode dans Photoshop. Cette équation-ci donne le blending "normal" entre pixels transparents.
     glEnable(GL_DEPTH_TEST);
 
+
+    auto render_target = gl::RenderTarget{gl::RenderTarget_Descriptor{
+        .width          = gl::framebuffer_width_in_pixels(),
+        .height         = gl::framebuffer_height_in_pixels(),
+        .color_textures = {
+            gl::ColorAttachment_Descriptor{
+                .format  = gl::InternalFormat_Color::RGBA8,
+                .options = {
+                    .minification_filter  = gl::Filter::NearestNeighbour, // On va toujours afficher la texture à la taille de l'écran,
+                    .magnification_filter = gl::Filter::NearestNeighbour, // donc les filtres n'auront pas d'effet. Tant qu'à faire on choisit le moins coûteux.
+                    .wrap_x               = gl::Wrap::ClampToEdge,
+                    .wrap_y               = gl::Wrap::ClampToEdge,
+                },
+            },
+        },
+        .depth_stencil_texture = gl::DepthStencilAttachment_Descriptor{
+            .format  = gl::InternalFormat_DepthStencil::Depth32F,
+            .options = {
+                .minification_filter  = gl::Filter::NearestNeighbour,
+                .magnification_filter = gl::Filter::NearestNeighbour,
+                .wrap_x               = gl::Wrap::ClampToEdge,
+                .wrap_y               = gl::Wrap::ClampToEdge,
+            },
+        },
+    }};
+
+    render_target.render([&]() {
+        glClearColor(1.f, 0.f, 0.f, 1.f); // Dessine du rouge, non pas à l'écran, mais sur notre render target
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        // ... mettez tout votre code de rendu ici
+    });
+
+
     // Setup camera 
     auto camera = gl::Camera{};
     
     gl::set_events_callbacks({
         camera.events_callbacks(),
         {
+            // Log la position de la souris
             .on_mouse_pressed = [&](gl::MousePressedEvent const& e) {
                 std::cout << "Mouse pressed at " << e.position.x << " " << e.position.y << '\n';
+            },
+            // Redimensionne la texture dans la render target si la fenêtre est redimensionnée
+            .on_framebuffer_resized = [&](gl::FramebufferResizedEvent const& e) {
+                render_target.resize(e.width_in_pixels, e.height_in_pixels);
             },
         },
     });
@@ -48,30 +86,30 @@ int main()
         },
     }};
 
-    // auto const cube_mesh = gl::Mesh{{
-    //     .vertex_buffers = {{
-    //         .layout = {gl::VertexAttribute::Position3D{0}, gl::VertexAttribute::UV{1}},
-    //         .data   = { // Sommets
-    //             0, 0, 0,
-    //             1, 0, 0,
-    //             0, 1, 0,
-    //             1, 1, 0,
+    auto const cube_mesh = gl::Mesh{{
+        .vertex_buffers = {{
+            .layout = {gl::VertexAttribute::Position3D{0}, gl::VertexAttribute::UV{1}},
+            .data   = { // Sommets et UVs
+                0, 0, 0,  0, 0,
+                1, 0, 0,  0, 1,
+                0, 1, 0,  1, 0,
+                1, 1, 0,  1, 1,
                 
-    //             0, 0, 1,
-    //             1, 0, 1,
-    //             0, 1, 1,
-    //             1, 1, 1,
-    //         },
-    //     }},
-    //     .index_buffer   = { // Triangles des faces utilisant 3 sommets (numéros des sommets ci-dessus commençant à 0)
-    //         0, 1, 2,  1, 2, 3, // Avant
-    //         0, 1, 4,  1, 4, 5, // Dessous
-    //         4, 5, 7,  4, 6, 7, // Arrière
-    //         2, 3, 6,  3, 6, 7, // Dessus
-    //         1, 3, 7,  1, 5, 7, // Côté 1
-    //         2, 0, 4,  2, 6, 4, // Côté 2
-    //     },
-    // }};
+                0, 0, 1,  0, 0,
+                1, 0, 1,  0, 1,
+                0, 1, 1,  1, 0,
+                1, 1, 1,  1, 1,
+            },
+        }},
+        .index_buffer   = { // Triangles des faces utilisant 3 sommets (numéros des sommets ci-dessus commençant à 0)
+            0, 1, 2,  1, 2, 3, // Avant
+            0, 1, 4,  1, 4, 5, // Dessous
+            4, 5, 7,  4, 6, 7, // Arrière
+            2, 3, 6,  3, 6, 7, // Dessus
+            1, 3, 7,  1, 5, 7, // Côté 1
+            2, 0, 4,  2, 6, 4, // Côté 2
+        },
+    }};
 
     auto const my_texture = gl::Texture{
         gl::TextureSource::File{ // Peut être un fichier, ou directement un tableau de pixels
@@ -82,8 +120,8 @@ int main()
         gl::TextureOptions{
             .minification_filter  = gl::Filter::NearestNeighbour, // Comment on va moyenner les pixels quand on voit l'image de loin ?
             .magnification_filter = gl::Filter::NearestNeighbour, // Comment on va interpoler entre les pixels quand on zoom dans l'image ?
-            .wrap_x               = gl::Wrap::MirroredRepeat,   // Quelle couleur va-t-on lire si jamais on essaye de lire en dehors de la texture ?
-            .wrap_y               = gl::Wrap::MirroredRepeat,   // Idem, mais sur l'axe Y. En général on met le même wrap mode sur les deux axes.
+            .wrap_x               = gl::Wrap::ClampToEdge,   // Quelle couleur va-t-on lire si jamais on essaye de lire en dehors de la texture ?
+            .wrap_y               = gl::Wrap::ClampToEdge,   // Idem, mais sur l'axe Y. En général on met le même wrap mode sur les deux axes.
         },
     };
 
@@ -106,7 +144,7 @@ int main()
         my_shader.set_uniform("view_projection_matrix", view_projection_matrix);
         my_shader.set_uniform("my_texture", my_texture);
 
-        square_mesh.draw();
-        // cube_mesh.draw();
+        // square_mesh.draw();
+        cube_mesh.draw();
     }
 }
