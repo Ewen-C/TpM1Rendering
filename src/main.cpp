@@ -8,7 +8,7 @@
 int main()
 {
     // Initialisation
-    gl::init("TPs de Rendering"); // On crée une fenêtre et on choisit son nom
+    gl::init("TP de Rendering"); // On crée une fenêtre et on choisit son nom
     gl::maximize_window(); // On peut la maximiser si on veut
 
     glEnable(GL_BLEND);
@@ -27,19 +27,19 @@ int main()
         },
     });
     
-    auto const shader_square = gl::Shader{{
+    auto const my_shader = gl::Shader{{
         .vertex   = gl::ShaderSource::File{"res/vertex_square.glsl"},
         .fragment = gl::ShaderSource::File{"res/fragment_square.glsl"},
     }};
 
     auto const square_mesh = gl::Mesh{{
         .vertex_buffers = {{
-            .layout = {gl::VertexAttribute::Position2D{0}},
+            .layout = {gl::VertexAttribute::Position2D{0}, gl::VertexAttribute::UV{1}},
             .data   = {
-                -0.5f, -0.5f, // Position2D du 1er sommet
-                +0.5f, -0.5f, // Position2D du 2ème sommet
-                +0.5f, +0.5f, // Position2D du 3ème sommet
-                -0.5f, +0.5f  // Position2D du 4ème sommet
+                0, 0, /* Position2D du 1er sommet  */  0, 0, /* UVs du 1er sommet  */
+                1, 0, /* Position2D du 2ème sommet */  0, 1, /* UVs du 2ème sommet */
+                1, 1, /* Position2D du 3ème sommet */  1, 1, /* UVs du 3ème sommet */
+                0, 1, /* Position2D du 4ème sommet */  1, 0, /* UVs du 4ème sommet */
             },
         }},
         .index_buffer   = {
@@ -48,36 +48,50 @@ int main()
         },
     }};
 
-    auto const cube_mesh = gl::Mesh{{
-        .vertex_buffers = {{
-            .layout = {gl::VertexAttribute::Position3D{0}},
-            .data   = { // Sommets
-                0, 0, 0,
-                1, 0, 0,
-                0, 1, 0,
-                1, 1, 0,
+    // auto const cube_mesh = gl::Mesh{{
+    //     .vertex_buffers = {{
+    //         .layout = {gl::VertexAttribute::Position3D{0}, gl::VertexAttribute::UV{1}},
+    //         .data   = { // Sommets
+    //             0, 0, 0,
+    //             1, 0, 0,
+    //             0, 1, 0,
+    //             1, 1, 0,
                 
-                0, 0, 1,
-                1, 0, 1,
-                0, 1, 1,
-                1, 1, 1,
-            },
-        }},
-        .index_buffer   = { // Triangles des faces utilisant 3 sommets (numéros des sommets ci-dessus commençant à 0)
-            0, 1, 2,  1, 2, 3, // Avant
-            0, 1, 4,  1, 4, 5, // Dessous
-            4, 5, 7,  4, 6, 7, // Arrière
-            2, 3, 6,  3, 6, 7, // Dessus
-            1, 3, 7,  1, 5, 7, // Côté 1
-            2, 0, 4,  2, 6, 4, // Côté 2
+    //             0, 0, 1,
+    //             1, 0, 1,
+    //             0, 1, 1,
+    //             1, 1, 1,
+    //         },
+    //     }},
+    //     .index_buffer   = { // Triangles des faces utilisant 3 sommets (numéros des sommets ci-dessus commençant à 0)
+    //         0, 1, 2,  1, 2, 3, // Avant
+    //         0, 1, 4,  1, 4, 5, // Dessous
+    //         4, 5, 7,  4, 6, 7, // Arrière
+    //         2, 3, 6,  3, 6, 7, // Dessus
+    //         1, 3, 7,  1, 5, 7, // Côté 1
+    //         2, 0, 4,  2, 6, 4, // Côté 2
+    //     },
+    // }};
+
+    auto const my_texture = gl::Texture{
+        gl::TextureSource::File{ // Peut être un fichier, ou directement un tableau de pixels
+            .path           = "res/texture-test.png",
+            .flip_y         = true, // Il n'y a pas de convention universelle sur la direction de l'axe Y. Les fichiers (.png, .jpeg) utilisent souvent une direction différente de celle attendue par OpenGL. Ce booléen flip_y est là pour inverser la texture si jamais elle n'apparaît pas dans le bon sens.
+            .texture_format = gl::InternalFormat::RGBA8, // Format dans lequel la texture sera stockée. On pourrait par exemple utiliser RGBA16 si on voulait 16 bits par canal de couleur au lieu de 8. (Mais ça ne sert à rien dans notre cas car notre fichier ne contient que 8 bits par canal, donc on ne gagnerait pas de précision). On pourrait aussi stocker en RGB8 si on ne voulait pas de canal alpha. On utilise aussi parfois des textures avec un seul canal (R8) pour des usages spécifiques.
         },
-    }};
+        gl::TextureOptions{
+            .minification_filter  = gl::Filter::Linear, // Comment on va moyenner les pixels quand on voit l'image de loin ?
+            .magnification_filter = gl::Filter::Linear, // Comment on va interpoler entre les pixels quand on zoom dans l'image ?
+            .wrap_x               = gl::Wrap::Repeat,   // Quelle couleur va-t-on lire si jamais on essaye de lire en dehors de la texture ?
+            .wrap_y               = gl::Wrap::Repeat,   // Idem, mais sur l'axe Y. En général on met le même wrap mode sur les deux axes.
+        }
+    };
 
 
     while (gl::window_is_open())
     {
         // Rendu à chaque frame
-        glClearColor(0, 0.75f, 0, 1.f); // Choisis la couleur à utiliser. Les paramètres sont R, G, B, A avec des valeurs qui vont de 0 à 1
+        glClearColor(0.4f, 0.4f, 0.4f, 1.f); // Choisis la couleur à utiliser. Les paramètres sont R, G, B, A avec des valeurs qui vont de 0 à 1
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Exécute concrètement l'action d'appliquer sur tout l'écran la couleur choisie au-dessus
     
         glm::mat4 const view_matrix = camera.view_matrix();
@@ -87,10 +101,12 @@ int main()
 
         glm::mat4 const view_projection_matrix = projection_matrix * view_matrix/*  * rotation_matrix * translation_matrix */; // Ordre des opérations des matrices : <-- <-- <--
 
-        shader_square.bind();
-        shader_square.set_uniform("aspect_ratio", gl::framebuffer_aspect_ratio());
-        shader_square.set_uniform("view_projection_matrix", view_projection_matrix);
+        my_shader.bind();
+        my_shader.set_uniform("aspect_ratio", gl::framebuffer_aspect_ratio());
+        my_shader.set_uniform("view_projection_matrix", view_projection_matrix);
+        my_shader.set_uniform("my_texture", my_texture);
 
-        cube_mesh.draw();
+        square_mesh.draw();
+        // cube_mesh.draw();
     }
 }
