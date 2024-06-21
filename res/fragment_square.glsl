@@ -3,13 +3,11 @@
 // in vec2 vertex_position; // square
 // in vec3 vertex_position; // cube
 
-// out vec4 out_color;
-
 in vec2 uv;
-
-out vec4 texture_color;
+out vec4 output_color;
 
 uniform sampler2D my_texture;
+uniform float time_seconds;
 
 void main()
 {
@@ -18,5 +16,11 @@ void main()
     // out_color = vec4(vertex_position, 0., 1.); // square
     // out_color = vec4(vertex_position, 0., 1.); // cube
 
-    texture_color = texture(my_texture, uv);
+    // output_color = texture(my_texture, uv);
+
+    
+    vec4 my_color = texture(my_texture, uv);
+    vec4 fractMyColor =  vec4(fract(my_color.rgb + time_seconds), 1);
+
+    output_color = fractMyColor;
 }

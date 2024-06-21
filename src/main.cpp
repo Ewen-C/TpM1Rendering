@@ -70,7 +70,7 @@ int main()
         .fragment = gl::ShaderSource::File{"res/render_target_fragment.glsl"},
     }};
     
-    auto const my_shader = gl::Shader{{
+    auto const shader_cube = gl::Shader{{
         .vertex   = gl::ShaderSource::File{"res/vertex_square.glsl"},
         .fragment = gl::ShaderSource::File{"res/fragment_square.glsl"},
     }};
@@ -171,10 +171,11 @@ int main()
 
             // Draw custom mesh
 
-            my_shader.bind();
-            my_shader.set_uniform("aspect_ratio", gl::framebuffer_aspect_ratio());
-            my_shader.set_uniform("view_projection_matrix", view_projection_matrix);
-            my_shader.set_uniform("my_texture", my_texture);
+            shader_cube.bind();
+            shader_cube.set_uniform("aspect_ratio", gl::framebuffer_aspect_ratio());
+            shader_cube.set_uniform("view_projection_matrix", view_projection_matrix);
+            shader_cube.set_uniform("my_texture", my_texture);
+            shader_cube.set_uniform("time_seconds", gl::time_in_seconds());
 
             // square_mesh.draw();
             cube_mesh.draw();
