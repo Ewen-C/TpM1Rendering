@@ -8,6 +8,7 @@
 int main()
 {
     // Initialisation
+
     gl::init("TP de Rendering"); // On crée une fenêtre et on choisit son nom
     gl::maximize_window(); // On peut la maximiser si on veut
 
@@ -15,6 +16,7 @@ int main()
     glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE); // On peut configurer l'équation qui mélange deux couleurs, comme pour faire différents blend mode dans Photoshop. Cette équation-ci donne le blending "normal" entre pixels transparents.
     glEnable(GL_DEPTH_TEST);
 
+    // Render target avant camera
 
     auto render_target = gl::RenderTarget{gl::RenderTarget_Descriptor{
         .width          = gl::framebuffer_width_in_pixels(),
@@ -41,14 +43,9 @@ int main()
         },
     }};
 
-    render_target.render([&]() {
-        glClearColor(1.f, 0.f, 0.f, 1.f); // Dessine du rouge, non pas à l'écran, mais sur notre render target
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        // ... mettez tout votre code de rendu ici
-    });
-
 
     // Setup camera 
+
     auto camera = gl::Camera{};
     
     gl::set_events_callbacks({
@@ -64,27 +61,53 @@ int main()
             },
         },
     });
+
+
+    // Shaders
+    
+    auto const shader_render_target = gl::Shader{{
+        .vertex   = gl::ShaderSource::File{"res/render_target_vertex.glsl"},
+        .fragment = gl::ShaderSource::File{"res/render_target_fragment.glsl"},
+    }};
     
     auto const my_shader = gl::Shader{{
         .vertex   = gl::ShaderSource::File{"res/vertex_square.glsl"},
         .fragment = gl::ShaderSource::File{"res/fragment_square.glsl"},
     }};
 
-    auto const square_mesh = gl::Mesh{{
+    // Meshes
+
+    auto const mesh_render_target = gl::Mesh{{
         .vertex_buffers = {{
             .layout = {gl::VertexAttribute::Position2D{0}, gl::VertexAttribute::UV{1}},
             .data   = {
-                0, 0, /* Position2D du 1er sommet  */  -2, -2, /* UVs du 1er sommet  */
-                1, 0, /* Position2D du 2ème sommet */  -2, 2 , /* UVs du 2ème sommet */
-                1, 1, /* Position2D du 3ème sommet */  2 , 2 , /* UVs du 3ème sommet */
-                0, 1, /* Position2D du 4ème sommet */  2 , -2, /* UVs du 4ème sommet */
+                -1, -1, /* Position2D du 1er sommet  */  0, 0, /* UVs du 1er sommet  */
+                1, -1, /* Position2D du 2ème sommet */  1, 0, /* UVs du 2ème sommet */
+                1, 1, /* Position2D du 3ème sommet */  1, 1, /* UVs du 3ème sommet */
+                -1, 1, /* Position2D du 4ème sommet */  0, 1, /* UVs du 4ème sommet */
             },
         }},
-        .index_buffer   = {
+        .index_buffer = {
             0, 1, 2, // Indices du premier triangle : on utilise le 1er, 2ème et 3ème sommet
             0, 2, 3  // Indices du deuxième triangle : on utilise le 1er, 3ème et 4ème sommet
         },
     }};
+
+    // auto const square_mesh = gl::Mesh{{
+    //     .vertex_buffers = {{
+    //         .layout = {gl::VertexAttribute::Position2D{0}, gl::VertexAttribute::UV{1}},
+    //         .data   = {
+    //             0, 0, /* Position2D du 1er sommet  */  -2, -2, /* UVs du 1er sommet  */
+    //             1, 0, /* Position2D du 2ème sommet */  -2, 2 , /* UVs du 2ème sommet */
+    //             1, 1, /* Position2D du 3ème sommet */  2 , 2 , /* UVs du 3ème sommet */
+    //             0, 1, /* Position2D du 4ème sommet */  2 , -2, /* UVs du 4ème sommet */
+    //         },
+    //     }},
+    //     .index_buffer   = {
+    //         0, 1, 2, // Indices du premier triangle : on utilise le 1er, 2ème et 3ème sommet
+    //         0, 2, 3  // Indices du deuxième triangle : on utilise le 1er, 3ème et 4ème sommet
+    //     },
+    // }};
 
     auto const cube_mesh = gl::Mesh{{
         .vertex_buffers = {{
@@ -111,6 +134,8 @@ int main()
         },
     }};
 
+    // Textures
+
     auto const my_texture = gl::Texture{
         gl::TextureSource::File{ // Peut être un fichier, ou directement un tableau de pixels
             .path           = "res/texture-test.png",
@@ -126,25 +151,43 @@ int main()
     };
 
 
+    // Draw loop update
+
     while (gl::window_is_open())
     {
-        // Rendu à chaque frame
-        glClearColor(0.4f, 0.4f, 0.4f, 1.f); // Choisis la couleur à utiliser. Les paramètres sont R, G, B, A avec des valeurs qui vont de 0 à 1
+        render_target.render([&]() {
+
+            // Rendu à chaque frame
+
+            glClearColor(0.4f, 0.4f, 0.4f, 1.f); // Choisis la couleur à utiliser. Les paramètres sont R, G, B, A avec des valeurs qui vont de 0 à 1
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Exécute concrètement l'action d'appliquer sur tout l'écran la couleur choisie au-dessus
+        
+            glm::mat4 const view_matrix = camera.view_matrix();
+            glm::mat4 const projection_matrix = glm::infinitePerspective(2.f /*field of view in radians*/, gl::framebuffer_aspect_ratio() /*aspect ratio*/, 0.001f /*near plane*/);
+            // glm::mat4 const rotation_matrix = glm::rotate(glm::mat4{1.f}, gl::time_in_seconds() /*angle de la rotation*/, glm::vec3{0.f, 0.f, 1.f} /* axe autour duquel on tourne */);
+            // glm::mat4 const translation_matrix = glm::translate(glm::mat4{1.f}, glm::vec3{0.f, 1.f, 0.f} /* déplacement */);
+            glm::mat4 const view_projection_matrix = projection_matrix * view_matrix/*  * rotation_matrix * translation_matrix */; // Ordre des opérations des matrices : <-- <-- <--
+
+
+            // Draw custom mesh
+
+            my_shader.bind();
+            my_shader.set_uniform("aspect_ratio", gl::framebuffer_aspect_ratio());
+            my_shader.set_uniform("view_projection_matrix", view_projection_matrix);
+            my_shader.set_uniform("my_texture", my_texture);
+
+            // square_mesh.draw();
+            cube_mesh.draw();
+
+        });
+        
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Exécute concrètement l'action d'appliquer sur tout l'écran la couleur choisie au-dessus
-    
-        glm::mat4 const view_matrix = camera.view_matrix();
-        glm::mat4 const projection_matrix = glm::infinitePerspective(2.f /*field of view in radians*/, gl::framebuffer_aspect_ratio() /*aspect ratio*/, 0.001f /*near plane*/);
-        // glm::mat4 const rotation_matrix = glm::rotate(glm::mat4{1.f}, gl::time_in_seconds() /*angle de la rotation*/, glm::vec3{0.f, 0.f, 1.f} /* axe autour duquel on tourne */);
-        // glm::mat4 const translation_matrix = glm::translate(glm::mat4{1.f}, glm::vec3{0.f, 1.f, 0.f} /* déplacement */);
 
-        glm::mat4 const view_projection_matrix = projection_matrix * view_matrix/*  * rotation_matrix * translation_matrix */; // Ordre des opérations des matrices : <-- <-- <--
+        // Draw render target
 
-        my_shader.bind();
-        my_shader.set_uniform("aspect_ratio", gl::framebuffer_aspect_ratio());
-        my_shader.set_uniform("view_projection_matrix", view_projection_matrix);
-        my_shader.set_uniform("my_texture", my_texture);
+        shader_render_target.bind();
+        shader_render_target.set_uniform("color_texture", render_target.color_texture(0));
 
-        // square_mesh.draw();
-        cube_mesh.draw();
+        mesh_render_target.draw();
     }
 }

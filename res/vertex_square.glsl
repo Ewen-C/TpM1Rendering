@@ -12,7 +12,7 @@ out vec3 vertex_position;  // cube
 layout(location = 1) in vec2 uv_in;
 out vec2 uv;
 
- // uniform : variables envoyée du C++ au shaders
+// uniform : variables envoyée du C++ au shaders
 uniform float aspect_ratio;
 uniform mat4 view_projection_matrix;
 
