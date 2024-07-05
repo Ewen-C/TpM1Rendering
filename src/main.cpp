@@ -70,9 +70,14 @@ int main()
         .fragment = gl::ShaderSource::File{"res/render_target_fragment.glsl"},
     }};
     
-    auto const shader_cube = gl::Shader{{
-        .vertex   = gl::ShaderSource::File{"res/vertex_square.glsl"},
-        .fragment = gl::ShaderSource::File{"res/fragment_square.glsl"},
+    // auto const shader_cube = gl::Shader{{
+        // .vertex   = gl::ShaderSource::File{"res/square_vertex.glsl"},
+        // .fragment = gl::ShaderSource::File{"res/square_fragment.glsl"},
+    // }};
+    
+    auto const shader_bato = gl::Shader{{
+        .vertex   = gl::ShaderSource::File{"res/bato_vertex.glsl"},
+        .fragment = gl::ShaderSource::File{"res/bato_fragment.glsl"},
     }};
 
     // Meshes
@@ -150,7 +155,7 @@ int main()
     //     },
     // };
 
-    auto const my_texture = gl::Texture{
+    auto const texture_bato = gl::Texture{
         gl::TextureSource::File{ // Peut être un fichier, ou directement un tableau de pixels
             .path           = "res/fourareen2K_albedo.jpg",
             .flip_y         = true, // Il n'y a pas de convention universelle sur la direction de l'axe Y. Les fichiers (.png, .jpeg) utilisent souvent une direction différente de celle attendue par OpenGL. Ce booléen flip_y est là pour inverser la texture si jamais elle n'apparaît pas dans le bon sens.
@@ -182,11 +187,11 @@ int main()
     if (!reader.Error().empty()) {
         std::cerr << "TinyObjReader: " << reader.Error();
     }
-    exit(1);
+        exit(1);
     }
 
     if (!reader.Warning().empty()) {
-    std::cout << "TinyObjReader: " << reader.Warning();
+        std::cout << "TinyObjReader: " << reader.Warning();
     }
 
     auto& attrib = reader.GetAttrib();
@@ -225,6 +230,7 @@ int main()
             // tinyobj::real_t red   = attrib.colors[3*size_t(idx.vertex_index)+0];
             // tinyobj::real_t green = attrib.colors[3*size_t(idx.vertex_index)+1];
             // tinyobj::real_t blue  = attrib.colors[3*size_t(idx.vertex_index)+2];
+
             }
             index_offset += fv;
 
@@ -272,13 +278,18 @@ int main()
 
             // square_mesh.draw();
 
-            shader_cube.bind();
-            shader_cube.set_uniform("aspect_ratio", gl::framebuffer_aspect_ratio());
-            shader_cube.set_uniform("view_projection_matrix", view_projection_matrix);
-            shader_cube.set_uniform("my_texture", my_texture);
-            shader_cube.set_uniform("time_seconds", gl::time_in_seconds());
+            // shader_cube.bind();
+            // shader_cube.set_uniform("aspect_ratio", gl::framebuffer_aspect_ratio());
+            // shader_cube.set_uniform("view_projection_matrix", view_projection_matrix);
+            // shader_cube.set_uniform("my_texture", my_texture);
+            // shader_cube.set_uniform("time_seconds", gl::time_in_seconds());
             // cube_mesh.draw();
-            
+
+            shader_bato.bind();
+            shader_bato.set_uniform("aspect_ratio", gl::framebuffer_aspect_ratio());
+            shader_bato.set_uniform("view_projection_matrix", view_projection_matrix);
+            shader_bato.set_uniform("texture_bato", texture_bato);
+            shader_bato.set_uniform("time_seconds", gl::time_in_seconds());
             bato_mesh.draw();
 
         });
