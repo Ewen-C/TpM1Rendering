@@ -109,36 +109,50 @@ int main()
     //     },
     // }};
 
-    auto const cube_mesh = gl::Mesh{{
-        .vertex_buffers = {{
-            .layout = {gl::VertexAttribute::Position3D{0}, gl::VertexAttribute::UV{1}},
-            .data   = { // Sommets et UVs
-                0, 0, 0,  0, 0,
-                1, 0, 0,  0, 1,
-                0, 1, 0,  1, 0,
-                1, 1, 0,  1, 1,
+    // auto const cube_mesh = gl::Mesh{{
+    //     .vertex_buffers = {{
+    //         .layout = {gl::VertexAttribute::Position3D{0}, gl::VertexAttribute::UV{1}},
+    //         .data   = { // Sommets et UVs
+    //             0, 0, 0,  0, 0,
+    //             1, 0, 0,  0, 1,
+    //             0, 1, 0,  1, 0,
+    //             1, 1, 0,  1, 1,
                 
-                0, 0, 1,  0, 0,
-                1, 0, 1,  0, 1,
-                0, 1, 1,  1, 0,
-                1, 1, 1,  1, 1,
-            },
-        }},
-        .index_buffer   = { // Triangles des faces utilisant 3 sommets (numéros des sommets ci-dessus commençant à 0)
-            0, 1, 2,  1, 2, 3, // Avant
-            0, 1, 4,  1, 4, 5, // Dessous
-            4, 5, 7,  4, 6, 7, // Arrière
-            2, 3, 6,  3, 6, 7, // Dessus
-            1, 3, 7,  1, 5, 7, // Côté 1
-            2, 0, 4,  2, 6, 4, // Côté 2
-        },
-    }};
+    //             0, 0, 1,  0, 0,
+    //             1, 0, 1,  0, 1,
+    //             0, 1, 1,  1, 0,
+    //             1, 1, 1,  1, 1,
+    //         },
+    //     }},
+    //     .index_buffer   = { // Triangles des faces utilisant 3 sommets (numéros des sommets ci-dessus commençant à 0)
+    //         0, 1, 2,  1, 2, 3, // Avant
+    //         0, 1, 4,  1, 4, 5, // Dessous
+    //         4, 5, 7,  4, 6, 7, // Arrière
+    //         2, 3, 6,  3, 6, 7, // Dessus
+    //         1, 3, 7,  1, 5, 7, // Côté 1
+    //         2, 0, 4,  2, 6, 4, // Côté 2
+    //     },
+    // }};
 
     // Textures
 
+    // auto const my_texture = gl::Texture{
+    //     gl::TextureSource::File{ // Peut être un fichier, ou directement un tableau de pixels
+    //         .path           = "res/texture-test.png",
+    //         .flip_y         = true, // Il n'y a pas de convention universelle sur la direction de l'axe Y. Les fichiers (.png, .jpeg) utilisent souvent une direction différente de celle attendue par OpenGL. Ce booléen flip_y est là pour inverser la texture si jamais elle n'apparaît pas dans le bon sens.
+    //         .texture_format = gl::InternalFormat::RGBA8, // Format dans lequel la texture sera stockée. On pourrait par exemple utiliser RGBA16 si on voulait 16 bits par canal de couleur au lieu de 8. (Mais ça ne sert à rien dans notre cas car notre fichier ne contient que 8 bits par canal, donc on ne gagnerait pas de précision). On pourrait aussi stocker en RGB8 si on ne voulait pas de canal alpha. On utilise aussi parfois des textures avec un seul canal (R8) pour des usages spécifiques.
+    //     },
+    //     gl::TextureOptions{
+    //         .minification_filter  = gl::Filter::NearestNeighbour, // Comment on va moyenner les pixels quand on voit l'image de loin ?
+    //         .magnification_filter = gl::Filter::NearestNeighbour, // Comment on va interpoler entre les pixels quand on zoom dans l'image ?
+    //         .wrap_x               = gl::Wrap::ClampToEdge,   // Quelle couleur va-t-on lire si jamais on essaye de lire en dehors de la texture ?
+    //         .wrap_y               = gl::Wrap::ClampToEdge,   // Idem, mais sur l'axe Y. En général on met le même wrap mode sur les deux axes.
+    //     },
+    // };
+
     auto const my_texture = gl::Texture{
         gl::TextureSource::File{ // Peut être un fichier, ou directement un tableau de pixels
-            .path           = "res/texture-test.png",
+            .path           = "res/fourareen2K_albedo.jpg",
             .flip_y         = true, // Il n'y a pas de convention universelle sur la direction de l'axe Y. Les fichiers (.png, .jpeg) utilisent souvent une direction différente de celle attendue par OpenGL. Ce booléen flip_y est là pour inverser la texture si jamais elle n'apparaît pas dans le bon sens.
             .texture_format = gl::InternalFormat::RGBA8, // Format dans lequel la texture sera stockée. On pourrait par exemple utiliser RGBA16 si on voulait 16 bits par canal de couleur au lieu de 8. (Mais ça ne sert à rien dans notre cas car notre fichier ne contient que 8 bits par canal, donc on ne gagnerait pas de précision). On pourrait aussi stocker en RGB8 si on ne voulait pas de canal alpha. On utilise aussi parfois des textures avec un seul canal (R8) pour des usages spécifiques.
         },
@@ -149,6 +163,91 @@ int main()
             .wrap_y               = gl::Wrap::ClampToEdge,   // Idem, mais sur l'axe Y. En général on met le même wrap mode sur les deux axes.
         },
     };
+
+
+
+    // BAT0 3D
+
+    std::vector<float> tabVertices = {};
+    std::vector<float> tabNormales = {};
+    std::vector<float> tabTextures = {};
+
+    std::string inputfile = "res/fourareen.obj";
+    tinyobj::ObjReaderConfig reader_config;
+    reader_config.mtl_search_path = "../res/"; // Path to material files
+
+    tinyobj::ObjReader reader;
+
+    if (!reader.ParseFromFile(inputfile, reader_config)) {
+    if (!reader.Error().empty()) {
+        std::cerr << "TinyObjReader: " << reader.Error();
+    }
+    exit(1);
+    }
+
+    if (!reader.Warning().empty()) {
+    std::cout << "TinyObjReader: " << reader.Warning();
+    }
+
+    auto& attrib = reader.GetAttrib();
+    auto& shapes = reader.GetShapes();
+    auto& materials = reader.GetMaterials();
+
+    // Loop over shapes
+    for (size_t s = 0; s < shapes.size(); s++) {
+        // Loop over faces(polygon)
+        size_t index_offset = 0;
+        for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
+            size_t fv = size_t(shapes[s].mesh.num_face_vertices[f]);
+
+            // Loop over vertices in the face.
+            for (size_t v = 0; v < fv; v++) {
+                // access to vertex
+                tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
+                tabVertices.push_back(attrib.vertices[3*size_t(idx.vertex_index)+0]);
+                tabVertices.push_back(attrib.vertices[3*size_t(idx.vertex_index)+2]); // Y et Z dans le bon sens -> 2 puis 1
+                tabVertices.push_back(attrib.vertices[3*size_t(idx.vertex_index)+1]);
+
+                // Check if `normal_index` is zero or positive. negative = no normal data
+                if (idx.normal_index >= 0) {
+                    tabNormales.push_back(attrib.normals[3*size_t(idx.normal_index)+0]);
+                    tabNormales.push_back(attrib.normals[3*size_t(idx.normal_index)+2]); // Y et Z dans le bon sens -> 2 puis 1
+                    tabNormales.push_back(attrib.normals[3*size_t(idx.normal_index)+1]);
+                }
+
+                // Check if `texcoord_index` is zero or positive. negative = no texcoord data
+                if (idx.texcoord_index >= 0) {
+                    tabTextures.push_back(attrib.texcoords[2*size_t(idx.texcoord_index)+0]);
+                    tabTextures.push_back(attrib.texcoords[2*size_t(idx.texcoord_index)+1]);
+                }
+
+            // Optional: vertex colors
+            // tinyobj::real_t red   = attrib.colors[3*size_t(idx.vertex_index)+0];
+            // tinyobj::real_t green = attrib.colors[3*size_t(idx.vertex_index)+1];
+            // tinyobj::real_t blue  = attrib.colors[3*size_t(idx.vertex_index)+2];
+            }
+            index_offset += fv;
+
+            // per-face material
+            shapes[s].mesh.material_ids[f];
+        }
+    }
+
+    auto const bato_mesh = gl::Mesh{{
+        .vertex_buffers = {{
+            .layout = {gl::VertexAttribute::Position3D{0}},
+            .data   = tabVertices,
+        }, {
+            .layout = {gl::VertexAttribute::UV{1}},
+            .data   = tabTextures,
+        }, {
+            .layout = {gl::VertexAttribute::Normal3D{2}},
+            .data   = tabNormales,
+        }},
+        // Calcul auto des index
+    }};
+
+
 
 
     // Draw loop update
@@ -171,14 +270,16 @@ int main()
 
             // Draw custom mesh
 
+            // square_mesh.draw();
+
             shader_cube.bind();
             shader_cube.set_uniform("aspect_ratio", gl::framebuffer_aspect_ratio());
             shader_cube.set_uniform("view_projection_matrix", view_projection_matrix);
             shader_cube.set_uniform("my_texture", my_texture);
             shader_cube.set_uniform("time_seconds", gl::time_in_seconds());
-
-            // square_mesh.draw();
-            cube_mesh.draw();
+            // cube_mesh.draw();
+            
+            bato_mesh.draw();
 
         });
         
