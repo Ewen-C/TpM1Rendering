@@ -290,6 +290,7 @@ int main()
             shader_bato.set_uniform("view_projection_matrix", view_projection_matrix);
             shader_bato.set_uniform("texture_bato", texture_bato);
             shader_bato.set_uniform("time_seconds", gl::time_in_seconds());
+            shader_bato.set_uniform("light_direction", glm::vec3(0.2, 0.3, -1.));
             bato_mesh.draw();
 
         });

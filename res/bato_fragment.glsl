@@ -6,13 +6,16 @@ out vec4 output_color;
 
 uniform sampler2D my_texture;
 uniform float time_seconds;
+uniform vec3 light_direction;
 
 void main() {
-    // vec4 my_color = texture(my_texture, uv);
-    // my_color = vec4(fract(my_color.rgb + time_seconds / 4), 1);
+    vec4 tex_color = texture(my_texture, uv);
 
-    vec4 my_color = vec4(pos_normals, 1.);
-    my_color = vec4(fract(pos_normals + time_seconds / 4), 1.);
+    vec3 pos_narmols = normalize(pos_normals);
+    vec3 narmol_light = normalize(- light_direction); // - light car on va du bato au soleilllll !
 
-    output_color = my_color;
+    float ndotl = (dot(pos_narmols, narmol_light) + 1) / 2;
+    vec3 my_color = vec3(ndotl * tex_color.xyz);
+
+    output_color = vec4(my_color, 1);
 }
