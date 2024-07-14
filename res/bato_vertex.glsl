@@ -10,7 +10,7 @@ layout(location = 1) in vec2 uv_in;
 out vec2 uv;
 
 layout(location = 2) in vec3 in_normals;
-out vec3 pos_normals;
+out vec3 tex_normals;
 
 // uniform : variables envoyée du C++ au shaders
 uniform float aspect_ratio;
@@ -26,8 +26,6 @@ void main() {
     gl_Position = view_projection_matrix * vec4(my_position, 1.); // cube
 
     vertex_position = in_position;
-
     uv = uv_in;
-
-    pos_normals = in_normals;
+    tex_normals = in_normals;
 }

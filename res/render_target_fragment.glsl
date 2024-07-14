@@ -5,8 +5,7 @@ out vec4 output_color;
 
 uniform sampler2D color_texture;
 
-void main()
-{
+void main() {
     vec4 my_color = texture(color_texture, uv);
     output_color = my_color;
 
