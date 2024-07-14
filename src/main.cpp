@@ -253,9 +253,6 @@ int main()
         // Calcul auto des index
     }};
 
-
-
-
     // Draw loop update
 
     while (gl::window_is_open())
@@ -269,9 +266,9 @@ int main()
         
             glm::mat4 const view_matrix = camera.view_matrix();
             glm::mat4 const projection_matrix = glm::infinitePerspective(2.f /*field of view in radians*/, gl::framebuffer_aspect_ratio() /*aspect ratio*/, 0.001f /*near plane*/);
-            // glm::mat4 const rotation_matrix = glm::rotate(glm::mat4{1.f}, gl::time_in_seconds() /*angle de la rotation*/, glm::vec3{0.f, 0.f, 1.f} /* axe autour duquel on tourne */);
+            glm::mat4 const rotation_matrix = glm::rotate(glm::mat4{1.f}, gl::time_in_seconds() /*angle de la rotation*/, glm::vec3{1.f, 0.f, 0.f} /* axe autour duquel on tourne */);
             // glm::mat4 const translation_matrix = glm::translate(glm::mat4{1.f}, glm::vec3{0.f, 1.f, 0.f} /* déplacement */);
-            glm::mat4 const view_projection_matrix = projection_matrix * view_matrix/*  * rotation_matrix * translation_matrix */; // Ordre des opérations des matrices : <-- <-- <--
+            glm::mat4 const view_projection_matrix = projection_matrix * view_matrix * rotation_matrix /* * translation_matrix */; // Ordre des opérations des matrices : <-- <-- <--
 
 
             // Draw custom mesh
@@ -288,6 +285,7 @@ int main()
             shader_bato.bind();
             shader_bato.set_uniform("aspect_ratio", gl::framebuffer_aspect_ratio());
             shader_bato.set_uniform("view_projection_matrix", view_projection_matrix);
+            shader_bato.set_uniform("rotation_matrix", rotation_matrix);
             shader_bato.set_uniform("texture_bato", texture_bato);
             shader_bato.set_uniform("time_seconds", gl::time_in_seconds());
 
