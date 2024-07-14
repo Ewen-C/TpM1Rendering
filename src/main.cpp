@@ -179,7 +179,7 @@ int main()
 
     std::string inputfile = "res/fourareen.obj";
     tinyobj::ObjReaderConfig reader_config;
-    reader_config.mtl_search_path = "../res/"; // Path to material files
+    reader_config.mtl_search_path = "res/"; // Path to material files
 
     tinyobj::ObjReader reader;
 
